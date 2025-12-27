@@ -1,4 +1,4 @@
-FROM python:3.8-slim
+FROM python:3.10.6-slim-bullseye
 
 ENV LC_ALL=C.UTF-8
 ENV LANG=C.UTF-8
@@ -12,7 +12,7 @@ RUN apt-get update &&\
             libb64-0d \
             libglib2.0-0 \
             libgomp1 \
-            gcc \
+            gcc g++ \
             curl  \
             libturbojpeg0 \
             git &&\
