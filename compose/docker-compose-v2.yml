@@ -30,6 +30,7 @@ services:
       - *app
       - *entrypoint
       - *models
+      - ../misc/test_images:/images/test_images
     deploy:
       resources:
         reservations:
