@@ -168,6 +168,95 @@ class Processing:
 
             return output
 
+    async def extract_from_video(self,
+                                video_url: str,
+                                batch_size: int = 8,
+                                max_size: List[int] = None,
+                                threshold: float = 0.6,
+                                limit_faces: int = 0,
+                                min_face_size: int = 0,
+                                embed_only: bool = False,
+                                return_face_data: bool = False,
+                                extract_embedding: bool = True,
+                                extract_ga: bool = True,
+                                return_landmarks: bool = False,
+                                detect_masks: bool = False,
+                                verbose_timings=True,
+                                **kwargs):
+        """
+        Extracts faces from video frames in batches.
+
+        Args:
+            video_url (str): URL or path to the video file.
+            batch_size (int): Number of frames to process in a batch.
+            Other arguments are similar to extract().
+
+        Returns:
+            List[Dict]: List of results for each batch of frames.
+        """
+
+        if not max_size:
+            max_size = self.max_size
+
+        t0 = time.time()
+        results = []
+        cap = cv2.VideoCapture(video_url)
+        frames = []
+
+        while True:
+            ret, frame = cap.read()
+            if not ret:
+                break
+            frames.append({'data': frame})
+
+            if len(frames) == batch_size:
+                batch_result = await self._process_frame_batch(
+                    frames, max_size, threshold, limit_faces, min_face_size,
+                    embed_only, return_face_data, extract_embedding, extract_ga,
+                    return_landmarks, detect_masks
+                )
+                results.append(batch_result)
+                frames.clear()
+        # Process any remaining frames
+        if frames:
+            batch_result = await self._process_frame_batch(
+                frames, max_size, threshold, limit_faces, min_face_size,
+                embed_only, return_face_data, extract_embedding, extract_ga,
+                return_landmarks, detect_masks
+            )
+            results.append(batch_result)
+
+        cap.release()
+        took = time.time() - t0
+        if verbose_timings:
+            logger.debug(f"Processed video in {took * 1000:.3f} ms.")
+
+        return results
+
+    async def _process_frame_batch(self, frames, max_size, threshold, limit_faces, min_face_size,
+                                  embed_only, return_face_data, extract_embedding, extract_ga,
+                                  return_landmarks, detect_masks):
+        if embed_only:
+            return await self.model.embed_crops(
+                frames,
+                extract_embedding=extract_embedding,
+                extract_ga=extract_ga,
+                detect_masks=detect_masks
+            )
+        else:
+            return await self.model.embed(
+                frames,
+                max_size=max_size,
+                return_face_data=return_face_data,
+                threshold=threshold,
+                limit_faces=limit_faces,
+                min_face_size=min_face_size,
+                extract_embedding=extract_embedding,
+                extract_ga=extract_ga,
+                return_landmarks=return_landmarks,
+                detect_masks=detect_masks
+            )
+
     async def draw(self,
                    images: Images,
                    threshold: float = 0.6,

@@ -10,7 +10,7 @@ from fastapi.routing import APIRoute
 from starlette.responses import StreamingResponse, PlainTextResponse
 
 from if_rest.core.processing import ProcessingDep
-from if_rest.schemas import BodyDraw, BodyExtract
+from if_rest.schemas import BodyDraw, BodyExtract, BodyExtractVideo
 
 
 class MsgPackRequest(Request):
@@ -75,6 +75,46 @@ async def extract(data: BodyExtract,
                                           img_req_headers=data.img_req_headers)
 
         if data.msgpack or 'application/x-msgpack' in accept:
+            return PlainTextResponse(msgpack.dumps(output, use_single_float=True), media_type='application/x-msgpack')
+        else:
+            return UJSONResponse(output)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post('/extract_video', tags=['Detection & recognition'])
+async def extract_video(data: BodyExtractVideo,
+                  processing: ProcessingDep,
+                  accept: Optional[List[str]] = Header(None),
+                  content_type: Annotated[str | None, Header()] = None):
+    """
+    Face extraction/embeddings endpoint accept json with
+    parameters in following format:
+
+       - **video_url**: URL of the video to process (*required*)
+       - **threshold**: Detection threshold. Default: 0.6 (*optional*)
+       - **embed_only**: Treat input images as face crops (112x112 crops required), omit detection step. Default: False (*optional*)
+       - **return_face_data**: Return face crops encoded in base64. Default: False (*optional*)
+       - **return_landmarks**: Return face landmarks. Default: False (*optional*)
+       - **extract_embedding**: Extract face embeddings (otherwise only detect faces). Default: True (*optional*)
+       - **extract_ga**: Extract gender/age. Default: False (*optional*)
+       - **limit_faces**: Maximum number of faces to be processed.  0 for unlimited number. Default: 0 (*optional*)
+       - **verbose_timings**: Return all timings. Default: False (*optional*)
+       \f
+
+       :return:
+       List[List[dict]]
+    """
+    try:
+        output = await processing.extract_from_video(data.video_url, return_face_data=data.return_face_data,
+                                          embed_only=data.embed_only, extract_embedding=data.extract_embedding,
+                                          threshold=data.threshold, extract_ga=data.extract_ga,
+                                          limit_faces=data.limit_faces, min_face_size=data.min_face_size,
+                                          return_landmarks=data.return_landmarks,
+                                          detect_masks=data.detect_masks,
+                                          verbose_timings=data.verbose_timings)
+
+        if 'application/x-msgpack' in accept:
             return PlainTextResponse(msgpack.dumps(output, use_single_float=True), media_type='application/x-msgpack')
         else:
             return UJSONResponse(output)

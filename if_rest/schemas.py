@@ -17,6 +17,50 @@ class Images(BaseModel):
                                                example=[example_img],
                                                description='List of images urls')
 
+class BodyExtractVideo(BaseModel):
+    video_url: str = pydantic.Field(default=None, example='test_videos/test1.mp4', description='URL of the video to process')
+
+    threshold: Optional[float] = pydantic.Field(default=settings.defaults.det_thresh,
+                                                example=settings.defaults.det_thresh,
+                                                description='Detector threshold')
+
+    embed_only: Optional[bool] = pydantic.Field(default=False,
+                                                example=False,
+                                                description='Treat input images as face crops and omit detection step')
+
+    return_face_data: Optional[bool] = pydantic.Field(default=settings.defaults.return_face_data,
+                                                      example=settings.defaults.return_face_data,
+                                                      description='Return face crops encoded in base64')
+
+    return_landmarks: Optional[bool] = pydantic.Field(default=settings.defaults.return_landmarks,
+                                                      example=settings.defaults.return_landmarks,
+                                                      description='Return face landmarks')
+
+    extract_embedding: Optional[bool] = pydantic.Field(default=settings.defaults.extract_embedding,
+                                                       example=settings.defaults.extract_embedding,
+                                                       description='Extract face embeddings (otherwise only detect \
+                                                       faces)')
+
+    extract_ga: Optional[bool] = pydantic.Field(default=settings.defaults.extract_ga,
+                                                example=settings.defaults.extract_ga,
+                                                description='Extract gender/age')
+
+    detect_masks: Optional[bool] = pydantic.Field(default=settings.defaults.detect_masks,
+                                                  example=settings.defaults.detect_masks,
+                                                  description='Detect medical masks')
+
+    limit_faces: Optional[int] = pydantic.Field(default=0,
+                                                example=0,
+                                                description='Maximum number of faces to be processed')
+
+    min_face_size: Optional[int] = pydantic.Field(default=0,
+                                                  example=0,
+                                                  description='Ignore faces smaller than this size')
+
+    verbose_timings: Optional[bool] = pydantic.Field(default=False,
+                                                     example=True,
+                                                     description='Return all timings.')
+
 
 class BodyExtract(BaseModel):
     images: Images
