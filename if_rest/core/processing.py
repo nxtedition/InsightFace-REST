@@ -201,12 +201,15 @@ class Processing:
         t0 = time.time()
         cap = cv2.VideoCapture(video_url)
         frames = []
+        timestamps = []
 
         while True:
             ret, frame = cap.read()
             if not ret:
                 break
+
             frames.append({'data': frame})
+            timestamps.append(cap.get(cv2.CAP_PROP_POS_MSEC) / 1000.0)
 
             if len(frames) == batch_size:
                 batch_result = await self._process_frame_batch(
@@ -214,9 +217,10 @@ class Processing:
                     embed_only, return_face_data, extract_embedding, extract_ga,
                     return_landmarks, detect_masks
                 )
-                for result in batch_result['data']:
-                    yield result
+                for result in zip(batch_result['data'], timestamps):
+                    yield { **result[0], 'ts': result[1] }
                 frames.clear()
+                timestamps.clear()
         # Process any remaining frames
         if frames:
             batch_result = await self._process_frame_batch(
@@ -224,8 +228,8 @@ class Processing:
                 embed_only, return_face_data, extract_embedding, extract_ga,
                 return_landmarks, detect_masks
             )
-            for result in batch_result['data']:
-                yield result
+            for result in zip(batch_result['data'], timestamps):
+                yield { **result[0], 'ts': result[1] }
 
         cap.release()
         took = time.time() - t0
