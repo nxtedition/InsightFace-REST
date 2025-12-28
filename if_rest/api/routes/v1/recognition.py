@@ -2,11 +2,13 @@ from typing import Annotated
 from typing import Callable, List
 from typing import Optional
 
+import json
 import msgpack
 from fastapi import File, Form, Header, HTTPException, APIRouter
 from fastapi import Request, Response
 from fastapi.responses import UJSONResponse
 from fastapi.routing import APIRoute
+from starlette.requests import Request
 from starlette.responses import StreamingResponse, PlainTextResponse
 
 from if_rest.core.processing import ProcessingDep
@@ -85,6 +87,7 @@ async def extract(data: BodyExtract,
 @router.post('/extract_video', tags=['Detection & recognition'])
 async def extract_video(data: BodyExtractVideo,
                   processing: ProcessingDep,
+                  request: Request,
                   accept: Optional[List[str]] = Header(None),
                   content_type: Annotated[str | None, Header()] = None):
     """
@@ -105,19 +108,21 @@ async def extract_video(data: BodyExtractVideo,
        :return:
        List[List[dict]]
     """
-    try:
-        output = await processing.extract_from_video(data.video_url, return_face_data=data.return_face_data,
+    async def generator():
+        async for result in processing.extract_from_video(data.video_url, return_face_data=data.return_face_data,
                                           embed_only=data.embed_only, extract_embedding=data.extract_embedding,
                                           threshold=data.threshold, extract_ga=data.extract_ga,
                                           limit_faces=data.limit_faces, min_face_size=data.min_face_size,
                                           return_landmarks=data.return_landmarks,
                                           detect_masks=data.detect_masks,
-                                          verbose_timings=data.verbose_timings)
+                                          verbose_timings=data.verbose_timings):
+            if await request.is_disconnected():
+               return
 
-        if 'application/x-msgpack' in accept:
-            return PlainTextResponse(msgpack.dumps(output, use_single_float=True), media_type='application/x-msgpack')
-        else:
-            return UJSONResponse(output)
+            yield json.dumps(result) + "\n"
+
+    try:
+        return StreamingResponse(generator(), media_type="application/x-ndjson")
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

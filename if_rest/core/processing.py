@@ -199,7 +199,6 @@ class Processing:
             max_size = self.max_size
 
         t0 = time.time()
-        results = []
         cap = cv2.VideoCapture(video_url)
         frames = []
 
@@ -215,7 +214,8 @@ class Processing:
                     embed_only, return_face_data, extract_embedding, extract_ga,
                     return_landmarks, detect_masks
                 )
-                results.append(batch_result)
+                for result in batch_result['data']:
+                    yield result
                 frames.clear()
         # Process any remaining frames
         if frames:
@@ -224,14 +224,13 @@ class Processing:
                 embed_only, return_face_data, extract_embedding, extract_ga,
                 return_landmarks, detect_masks
             )
-            results.append(batch_result)
+            for result in batch_result['data']:
+                yield result
 
         cap.release()
         took = time.time() - t0
         if verbose_timings:
             logger.debug(f"Processed video in {took * 1000:.3f} ms.")
-
-        return results
 
     async def _process_frame_batch(self, frames, max_size, threshold, limit_faces, min_face_size,
                                   embed_only, return_face_data, extract_embedding, extract_ga,
