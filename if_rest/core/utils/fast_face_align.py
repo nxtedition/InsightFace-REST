@@ -22,7 +22,7 @@ arcface_src = np.array([
 arcface_src = np.expand_dims(arcface_src, axis=0)
 
 
-@nb.njit(cache=True, fastmath=True)
+@nb.njit(fastmath=True)
 def np_apply_along_axis(func1d, axis, arr):
     """
     Applies a function along an axis of a 2D array.
@@ -49,7 +49,7 @@ def np_apply_along_axis(func1d, axis, arr):
     return result
 
 
-@nb.njit(cache=True, fastmath=True)
+@nb.njit(fastmath=True)
 def np_mean(array, axis):
     """
     Computes the mean of a 2D array along a specified axis.
@@ -64,7 +64,7 @@ def np_mean(array, axis):
     return np_apply_along_axis(np.mean, axis, array)
 
 
-@nb.njit(cache=True, fastmath=True)
+@nb.njit(fastmath=True)
 def np_std(array, axis):
     """
     Computes the standard deviation of a 2D array along a specified axis.
@@ -79,7 +79,7 @@ def np_std(array, axis):
     return np_apply_along_axis(np.std, axis, array)
 
 
-@nb.njit(cache=True, fastmath=True)
+@nb.njit(fastmath=True)
 def np_var(array, axis):
     """
     Computes the variance of a 2D array along a specified axis.
@@ -94,7 +94,7 @@ def np_var(array, axis):
     return np_apply_along_axis(np.var, axis, array)
 
 
-@nb.njit(fastmath=True, cache=True)
+@nb.njit(fastmath=True)
 def _umeyama(src, dst, estimate_scale):
     """
     Estimates the transformation matrix using the Umeyama algorithm.
@@ -158,7 +158,7 @@ def _umeyama(src, dst, estimate_scale):
     return T
 
 
-@nb.njit(cache=True, fastmath=True)
+@nb.njit(fastmath=True)
 def estimate_norm(lmk, image_size=112, mode='arcface'):
     """
     Estimates the norm of a given landmarks.
@@ -184,7 +184,7 @@ def estimate_norm(lmk, image_size=112, mode='arcface'):
     return M
 
 
-@nb.njit(cache=True, fastmath=True)
+@nb.njit(fastmath=True)
 def estimate_norm_batch(lmks, image_size=112, mode='arcface'):
     """
     Estimates the norms of multiple landmarks in batch mode.
