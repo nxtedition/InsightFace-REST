@@ -1,0 +1,17 @@
+services:
+  insightface-rest:
+    image: insightface-rest:v0.9.5.0
+    container_name: insightface
+    build: .
+    runtime: nvidia
+    env_file: ./compose/.env
+    volumes:
+      - ./models:/models
+    ports:
+      - 18080:18080
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:18080/health" ]
+      interval: 300s
+      timeout: 10s
+      retries: 3
+      start_period: 30s

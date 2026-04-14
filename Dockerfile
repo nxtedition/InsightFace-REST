@@ -25,5 +25,4 @@ WORKDIR /app
 COPY if_rest /app/if_rest
 COPY entrypoint.sh /app/entrypoint.sh
 
-ENTRYPOINT [ "bash" ]
-CMD ["entrypoint.sh"]
+CMD ["/app/entrypoint.sh"]

@@ -1,0 +1,15 @@
+.venv
+.git
+.gitignore
+.vscode
+__pycache__
+*.pyc
+
+compose
+crops
+dockerfiles
+Dockerfile
+examples
+ifr_clients
+misc
+models
