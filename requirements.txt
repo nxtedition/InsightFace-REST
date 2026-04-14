@@ -10,13 +10,13 @@ ujson
 msgpack
 tqdm
 icc-rt
-numba==0.59.1
+numba>=0.60
 opencv-python
 scikit-image
 onnx>=1.18
 onnxruntime>=1.18
 onnx-simplifier
-git+https://github.com/lilohuang/PyTurboJPEG.git
+PyTurboJPEG>=1.7,<2
 exifread
 tritonclient[http,grpc]
 imageio
