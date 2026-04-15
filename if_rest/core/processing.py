@@ -218,7 +218,7 @@ class Processing:
                     return_landmarks, detect_masks
                 )
                 for result in zip(batch_result['data'], timestamps):
-                    yield { **result[0], 'ts': result[1] }
+                    yield { **result[0], 'time': result[1] }
                 frames.clear()
                 timestamps.clear()
         # Process any remaining frames
@@ -229,7 +229,7 @@ class Processing:
                 return_landmarks, detect_masks
             )
             for result in zip(batch_result['data'], timestamps):
-                yield { **result[0], 'ts': result[1] }
+                yield { **result[0], 'time': result[1] }
 
         cap.release()
         took = time.time() - t0
