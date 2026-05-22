@@ -12,6 +12,7 @@ tqdm
 icc-rt
 numba>=0.60
 opencv-python
+av
 scikit-image
 onnx>=1.18
 onnxruntime>=1.18

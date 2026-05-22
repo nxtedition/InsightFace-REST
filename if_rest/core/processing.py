@@ -6,6 +6,7 @@ import time
 from typing import Dict, List, Union, Annotated
 
 import aiohttp
+import av
 import cv2
 import numpy as np
 from fastapi import Depends
@@ -199,28 +200,65 @@ class Processing:
             max_size = self.max_size
 
         t0 = time.time()
-        cap = cv2.VideoCapture(video_url)
         frames = []
         timestamps = []
 
-        while True:
-            ret, frame = cap.read()
-            if not ret:
-                break
+        with av.open(video_url) as container:
+            video_stream = container.streams.video[0]
+            graph = av.filter.Graph()
+            buffer = graph.add_buffer(template=video_stream)
+            bwdif = graph.add('bwdif', args='deint=interlaced:mode=send_field')
+            sink = graph.add('buffersink')
+            buffer.link_to(bwdif)
+            bwdif.link_to(sink)
+            graph.configure()
 
-            frames.append({'data': frame})
-            timestamps.append(cap.get(cv2.CAP_PROP_POS_MSEC) / 1000.0)
+            for frame in container.decode(video=0):
+                buffer.push(frame)
+                while True:
+                    try:
+                        filtered_frame = sink.pull()
+                    except av.error.BlockingIOError:
+                        break
+                    except av.error.EOFError:
+                        break
 
-            if len(frames) == batch_size:
-                batch_result = await self._process_frame_batch(
-                    frames, max_size, threshold, limit_faces, min_face_size,
-                    embed_only, return_face_data, extract_embedding, extract_ga,
-                    return_landmarks, detect_masks
-                )
-                for result in zip(batch_result['data'], timestamps):
-                    yield { **result[0], 'time': result[1] }
-                frames.clear()
-                timestamps.clear()
+                    frames.append({'data': filtered_frame.to_ndarray(format='bgr24')})
+                    timestamps.append(float(filtered_frame.time or 0.0))
+
+                    if len(frames) == batch_size:
+                        batch_result = await self._process_frame_batch(
+                            frames, max_size, threshold, limit_faces, min_face_size,
+                            embed_only, return_face_data, extract_embedding, extract_ga,
+                            return_landmarks, detect_masks
+                        )
+                        for result in zip(batch_result['data'], timestamps):
+                            yield { **result[0], 'time': result[1] }
+                        frames.clear()
+                        timestamps.clear()
+
+            graph.push(None)
+            while True:
+                try:
+                    filtered_frame = sink.pull()
+                except av.error.BlockingIOError:
+                    break
+                except av.error.EOFError:
+                    break
+
+                frames.append({'data': filtered_frame.to_ndarray(format='bgr24')})
+                timestamps.append(float(filtered_frame.time or 0.0))
+
+                if len(frames) == batch_size:
+                    batch_result = await self._process_frame_batch(
+                        frames, max_size, threshold, limit_faces, min_face_size,
+                        embed_only, return_face_data, extract_embedding, extract_ga,
+                        return_landmarks, detect_masks
+                    )
+                    for result in zip(batch_result['data'], timestamps):
+                        yield { **result[0], 'time': result[1] }
+                    frames.clear()
+                    timestamps.clear()
         # Process any remaining frames
         if frames:
             batch_result = await self._process_frame_batch(
@@ -231,7 +269,6 @@ class Processing:
             for result in zip(batch_result['data'], timestamps):
                 yield { **result[0], 'time': result[1] }
 
-        cap.release()
         took = time.time() - t0
         if verbose_timings:
             logger.debug(f"Processed video in {took * 1000:.3f} ms.")
