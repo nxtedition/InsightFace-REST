@@ -17,8 +17,8 @@ class Configs(object):
         )
 
     def __read_models_file(self):
-        models_default_path = os.path.join(self.models_dir, 'models.json')
-        models_override_path = os.path.join(self.models_dir, 'models.override.json')
+        models_default_path = 'models.json'
+        models_override_path = 'models.override.json'
         models_conf = models_default_path
         if os.path.exists(models_override_path):
             models_conf = models_override_path
