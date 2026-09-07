@@ -12,6 +12,7 @@ from numpy.linalg import norm
 
 from if_rest.core.model_zoo.getter import get_model
 from if_rest.core.utils import fast_face_align as face_align
+from if_rest.core.utils.face_quality import compute_quality
 from if_rest.core.utils.helpers import to_chunks, colorize_log, validate_max_size
 from if_rest.core.utils.image_provider import resize_image
 from if_rest.logger import logger
@@ -403,16 +404,17 @@ class FaceAnalysis:
                         crops = [None] * len(boxes)
 
                     for i, _crop in enumerate(crops):
+                        if min_face_size > 0 and (boxes[i][2] - boxes[i][0]) < min_face_size:
+                            continue
                         face = dict(
                             bbox=boxes[i], landmarks=landmarks[i], prob=probs[i],
                             num_det=i, scale=scales[idx], facedata=_crop
                         )
-                        if min_face_size > 0:
-                            w = boxes[i][2] - boxes[i][0]
-                            if w >= min_face_size:
-                                faces.append(face)
-                        else:
-                            faces.append(face)
+                        # Quality is measured on the original image, so it isn't
+                        # affected by the detector's input resizing.
+                        face.update(compute_quality(images[orig_id], boxes[i],
+                                                    landmarks=landmarks[i], det_score=probs[i]))
+                        faces.append(face)
 
                     t1 = time.perf_counter()
                     logger.debug(f'Cropping {len(boxes)} faces took: {(t1 - t0) * 1000:.3f} ms.')
@@ -476,7 +478,11 @@ class FaceAnalysis:
         output = dict(took_ms=None, data=[], status="ok")
 
         iterator = self.__iterate_images(images)
-        iterator = ({'facedata': e} for e in iterator)
+        # Inputs are already aligned crops, so quality is measured on the whole
+        # crop and pose is left at zero since no landmarks are available.
+        iterator = ({'facedata': e,
+                     **compute_quality(e, (0, 0, e.shape[1], e.shape[0]), det_score=1.)}
+                    for e in iterator)
         faces = self.process_faces(iterator, extract_embedding=extract_embedding, extract_ga=extract_ga,
                                    return_face_data=False, detect_masks=detect_masks)
 
