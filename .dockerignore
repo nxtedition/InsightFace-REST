@@ -13,3 +13,10 @@ examples
 ifr_clients
 misc
 models
+
+# Local AI workspaces and private scratch files
+**/.claude
+**/.codex
+**/.cursor
+**/.aider*
+**/.*-private

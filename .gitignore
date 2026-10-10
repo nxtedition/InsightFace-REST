@@ -18,3 +18,10 @@ TODO.md
 .env
 __pycache__
 *.pyc
+
+# Local AI workspaces and private scratch files
+.claude
+.codex
+.cursor
+.aider*
+.*-private
