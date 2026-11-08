@@ -19,4 +19,7 @@ models
 **/.codex
 **/.cursor
 **/.aider*
+**/.gemini
+**/.specstory
+**/CLAUDE.local.md
 **/.*-private
